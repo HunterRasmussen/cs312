@@ -46,7 +46,7 @@ class Proj1GUI( QWidget ):
 		h.addWidget( QLabel( 'N: ' ) )
 		h.addWidget( self.input_n )
 		vbox.addLayout(h)
-        
+
         # K
 		h = QHBoxLayout()
 		h.addWidget( QLabel( 'K: ' ) )
@@ -77,9 +77,9 @@ class Proj1GUI( QWidget ):
 			# Make sure inputs are valid integers
 			n = int( self.input_n.text() )
 			k = int( self.input_k.text() )
-		
-			result = fermat.prime_test(n,k)
 			
+			result = fermat.prime_test(n,k)
+			print(result)
 			if result == 'prime':
 				prob = fermat.probability(k)
 				self.output.setText( '<i>Result:</i> {:d} <b>is prime</b> with probability {:5.15f}'.format(n,prob) )
@@ -98,7 +98,8 @@ class Proj1GUI( QWidget ):
 if __name__ == '__main__':
     # This line allows CNTL-C in the terminal to kill the program
 	signal.signal(signal.SIGINT, signal.SIG_DFL)
-    
+
 	app = QApplication(sys.argv)
 	w = Proj1GUI()
-	sys.exit(app.exec())
+
+	sys.exit(app.exec_())
