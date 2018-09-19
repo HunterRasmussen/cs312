@@ -77,7 +77,7 @@ class Proj1GUI( QWidget ):
 			# Make sure inputs are valid integers
 			n = int( self.input_n.text() )
 			k = int( self.input_k.text() )
-			
+
 			result = fermat.prime_test(n,k)
 			print(result)
 			if result == 'prime':
@@ -90,6 +90,7 @@ class Proj1GUI( QWidget ):
 
         # If inputs not valid, display an error
 		except Exception as e:
+			print(e)
 			self.output.setText('<i>ERROR:</i> inputs must be integers!')
 
 

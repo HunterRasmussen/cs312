@@ -1,0 +1,17 @@
+
+
+The time complexity of the Fermat test:
+
+
+
+
+
+The time complexity of the mod_exp
+
+
+
+The time complexity of the carmichael test:
+
+
+
+The equation of 
