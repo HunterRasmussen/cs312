@@ -3,6 +3,7 @@
 # this is 4-5 seconds slower on 1000000 points than Ryan's desktop...  Why?
 
 import math
+import copy
 from which_pyqt import PYQT_VER
 if PYQT_VER == 'PYQT5':
 	from PyQt5.QtCore import QLineF, QPointF, QThread, pyqtSignal
@@ -44,60 +45,18 @@ class ConvexHullSolverThread(QThread):
 		t1 = time.time()
 		# TODO: SORT THE POINTS BY INCREASING X-VALUE
 		#sortedPoints = sorted(self.points , key = lambda k: [k[0],k[1]])
-		mergeSort(self.points,0,n)
+		mergeSort(self.points,0,n-1)
 		t2 = time.time()
 		print('Time Elapsed (Sorting): {:3.3f} sec'.format(t2-t1))
 		print('printing all the points in order returned from merge sort')
 		for i in range (0,len(self.points)-1):
 			print(self.points[i].x())
 
+		hullPoints = copy.deepcopy(self.points)										#Big-oh(n) where n is the number of poitns
 		t3 = time.time()
+		compute_hull(hullPoints)
 		# TODO: COMPUTE THE CONVEX HULL USING DIVIDE AND CONQUER
-				#  d+c(hull)
-				#  if hull size == 1
-				#
-				#  else
-				#	cut hull in half
-				#	lefthull = d+c(lefthalf of cut);
-				#   rightHull = d+c(rightHalf of cut);
-				#
-				#	new LIST
-				#   topTangent = find topTangent(leftHull, rightHull, LIST);
-				#   botTangent = find botTangent(leftHull, rightHull LIST);
-				#   return remove any unecessary POINTS(leftHull,rightHull,topTangent,botTangent)
-				#		/* returns a pair of points*/
-				#	findTopTangent(leftHull,rightHull){
-				#		leftPoint = grap rightmost point in lefthull
-				#		rightPoint = grab leftmost point in righthull
-				#		moveleft = true;
-				#       moveright = true;
-				#		current slope = slope between leftPoint and rightPoint;
-				#     while(moveleft || moveright){
-				#			//if the left moved last
-				#         if(moveleft)
-				#			temp = get next point above on right;
-				#			tempslope = slope between temp and leftPoint
-				#			if tempslope > current slope:
-				#				currentslope = tempslope;
-				#				removePoint from LeftHull;
-				#				rightPoint = temp;
-				#				//we reset the moves.  Each time we move, we have to check both sides can't move.
-				#				moveLeft = true;
-				#				moveRight = true;
-				#			else:
-				#				moveLeft = false;
-				#		  else if(moveRight):
-				#			 temp = get next point above on the left;
-				#			  tempSlope = the slope between temp and right point
-				#			  if tempSlope < currentslopeL:
-				#				remove point from rightHull
-				#				currentslope = tempslope;
-				#				left point = temp;
-				#				//reset the moves
-				#			  else:
-				#				moveright = false;
-				#
-				#
+
 		t4 = time.time()
 
 		USE_DUMMY = True
@@ -119,6 +78,104 @@ class ConvexHullSolverThread(QThread):
 		self.display_text.emit('Time Elapsed (Convex Hull): {:3.3f} sec'.format(t4-t3))
 		print('Time Elapsed (Convex Hull): {:3.3f} sec'.format(t4-t3))
 
+
+def compute_hull(points):
+	print("starting compute hull, number of points is:")
+	print(len(points))
+	if len(points) > 3:
+		m = math.floor(len(points)/2)
+		lefthalf = points[:m]
+		righthalf = points[m:]
+		left = compute_hull(lefthalf)
+		right = compute_hull(righthalf)
+		pointsToRemove  = []
+		#tangents is a pair of points
+		topTangent = findTopTangent(left,right,pointsToRemove)
+		botTangent = findBotTangent(left,right,pointsToRemove)
+
+		return left+right
+	return points
+
+
+def findTopTangent(leftHull, rightHull,pointsToRemove):
+	print(type(leftHull))
+	leftMostIndex = getLeftMost(rightHull)
+	rightMostIndex = getRightMost(leftHull)
+	#slope = (y2-y1)/(x2-x1)
+	deltaY = rightHull[leftMostIndex].y()-leftHull[leftMostIndex].y()
+	deltaX = rightHull[leftMostIndex].x()-leftHull[leftMostIndex].x()
+	slope =	deltaY/deltaX
+
+
+
+
+def getLeftMost(hull):
+	print(type(hull))
+	mostLeftX = 1.5
+	leftMostIndex = -1
+	for i in range(0,len(hull)):
+		if hull[i].x() < mostLeftX:
+			mostLeftX = hull[i].x()
+			leftMostIndex = i
+
+	return leftMostIndex
+
+
+def getRightMost(hull):
+	mostRightX = -1.5
+	rightMostIndex = -1
+	for i in range(0,len(hull)):
+		if hull[i].x() > mostRightX :
+			rightMostIndex = i
+			mostRightX = hull[i].x()
+
+	return rightMostIndex
+#  d+c(hull)
+#  if hull size == 1
+#
+#  else
+#	cut hull in half
+#	lefthull = d+c(lefthalf of cut);
+#   rightHull = d+c(rightHalf of cut);
+#
+#	new LIST
+#   topTangent = find topTangent(leftHull, rightHull, LIST);
+#   botTangent = find botTangent(leftHull, rightHull LIST);
+#   return remove any unecessary POINTS(leftHull,rightHull,topTangent,botTangent)
+#		/* returns a pair of points*/
+#	findTopTangent(leftHull,rightHull){
+#		leftPoint = grap rightmost point in lefthull
+#		rightPoint = grab leftmost point in righthull
+#		moveleft = true;
+#       moveright = true;
+#		current slope = slope between leftPoint and rightPoint;
+#     while(moveleft || moveright){
+#			//if the left moved last
+#         if(moveleft)
+#			temp = get next point above on right;
+#			tempslope = slope between temp and leftPoint
+#			if tempslope > current slope:
+#				currentslope = tempslope;
+#				removePoint from LeftHull;
+#				rightPoint = temp;
+#				//we reset the moves.  Each time we move, we have to check both sides can't move.
+#				moveLeft = true;
+#				moveRight = true;
+#			else:
+#				moveLeft = false;
+#		  else if(moveRight):
+#			 temp = get next point above on the left;
+#			  tempSlope = the slope between temp and right point
+#			  if tempSlope < currentslopeL:
+#				remove point from rightHull
+#				currentslope = tempslope;
+#				left point = temp;
+#				//reset the moves
+#			  else:
+#				moveright = false;
+#
+#
+
 def mergeSort(points, leftIndex, rightIndex):
 	if leftIndex < rightIndex:
 		m = math.floor((leftIndex + rightIndex)/2)
@@ -128,19 +185,19 @@ def mergeSort(points, leftIndex, rightIndex):
 		merge(points,leftIndex,m,rightIndex)
 
 def merge(points, leftIndex, middleIndex, rightIndex):
-	print (points[0].x())
+
 	leftArraySize = middleIndex - leftIndex + 1
 	rightArraySize = rightIndex - middleIndex
 
 	#tempArrays
 	left = [0] * (leftArraySize)
 	right = [0] * rightArraySize
-	print(points[leftIndex].x())
+
 	#copy data into appropriate arrays
-	for i in range(0, leftArraySize-1):
+	for i in range(0, leftArraySize):
 		left[i] = points[leftIndex+i]
 
-	for j in range(0,rightArraySize-1):
+	for j in range(0,rightArraySize):
 		right[j] = points[middleIndex+1+j]
 
 	i = 0
@@ -173,6 +230,3 @@ def merge(points, leftIndex, middleIndex, rightIndex):
 		points[k] = right[j]
 		j+=1
 		k+=1
-
-    # Copy the remaining elements of R[], if there
-    # are any
