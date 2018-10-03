@@ -98,15 +98,82 @@ def compute_hull(points):
 
 
 def findTopTangent(leftHull, rightHull,pointsToRemove):
-	print(type(leftHull))
 	leftMostIndex = getLeftMost(rightHull)
 	rightMostIndex = getRightMost(leftHull)
+	#this is used to make sure we are moving clockwise or counterClockwise.
+	#Clockwise can be defined as increasing x values and values of y that are greater than the start point's y
+	rightHullOriginalY = rightHull[leftMostIndex].y()
+	leftHullOriginalY = leftHull[rightMostIndex].y()
 	#slope = (y2-y1)/(x2-x1)
 	deltaY = rightHull[leftMostIndex].y()-leftHull[leftMostIndex].y()
 	deltaX = rightHull[leftMostIndex].x()-leftHull[leftMostIndex].x()
-	slope =	deltaY/deltaX
+	currentslope =	deltaY/deltaX
+	#represents if the given side has a potential for moving around the hull more
+	leftCanMove = True
+	rightCanMove = True
+	previousLeftHullIndex = rightMostIndex
+	previousRightHulllIndex = leftMostIndex
+	currentLeftHullIndex = rightMostIndex
+	currentRightHullIndex = leftMostIndex
+	while leftCanMove or rightCanMove:
+		#moveLeft until it can't move anymore
+		while leftCanMove:
+			#get the next point counterClockwise from current point
+			currentLeftHullIndex = moveLeftCounterClockwise(previousLeftHullIndex, leftHullOriginalY)
+			#calculate slope
+			deltaY = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y()
+			deltaX = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x()
+			tempSlope = deltaY/deltaX
+			#is the new slope better than previous slope
+			if tempSlope < slope:
+				slope = tempSlope
+				#since we found a better point, we know the previous point
+				# won't be in our hull unless it is the original start point,
+				# in which case it might be the point used by the bottom tangent
+				if previousLeftHullIndex != rightMostIndex:
+					pointsToRemove.append(previousLeftHullIndex)
+				previousLeftHullIndex = currentLeftHullIndex
+				leftCanMove = True
+				rightCanMove = True
+
+			else:
+				leftCanMove = False
+				#move back to the one we know works as a potential tangent
+				currentLeftHullIndex = previousLeftHullIndex
+		#move around Right Hull until it can't move anymore
+		while rightCanMove:
+			#get next point clockwise from currentPoint
+			currentRightHullIndex = moveRightClockwise(previousRightHulllIndex, rightHullOriginalY)
+			#calculate slope
+			deltaY = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y()
+			deltaX = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x()
+			tempSlope = deltaY/deltaX
+			if tempSlope > slope:
+				if previousRightHulllIndex != leftMostIndex:
+					pointsToRemove.append(previousRightHulllIndex)
+				previousRightHulllIndex = currentRightHullIndex
+				rightCanMove = True
+				leftCanMove = True
+
+			else:
+				rightCanMove = False
+				currentRightHullIndex = previousRightHulllIndex
 
 
+
+def findBotTangent(leftHull, rightHull, pointsToRemove):
+	leftMostIndex = getLeftMost(rightHull)
+	rightMostIndex = getRightMost(leftHull)
+	#this is used to make sure we are moving clockwise or counterClockwise.
+	#Clockwise can be defined as increasing x values and values of y that are greater than the start point's y
+	#since the hulls should contain only the outside points from the original set of pointsToRemove
+	# we can  look at the next point safely as long as it isn't below the original y value.
+	rightHullOriginalY = rightHull[leftMostIndex].y()
+	leftHullOriginalY = leftHull[rightMostIndex].y()
+	#slope = (y2-y1)/(x2-x1)
+	deltaY = rightHull[leftMostIndex].y()-leftHull[leftMostIndex].y()
+	deltaX = rightHull[leftMostIndex].x()-leftHull[leftMostIndex].x()
+	currentslope =	deltaY/deltaX
 
 
 def getLeftMost(hull):
