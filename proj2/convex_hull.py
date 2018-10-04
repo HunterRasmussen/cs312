@@ -28,8 +28,7 @@ class ConvexHullSolverThread(QThread):
 		self.wait()
 
 	def compute_hull(self,points):
-		#print("starting compute hull, number of points is:")
-		#print(len(points))
+		self.erase_hull.emit(points)
 		if len(points) > 3:
 			m = math.floor(len(points)/2)
 			lefthalf = points[:m]
@@ -40,10 +39,6 @@ class ConvexHullSolverThread(QThread):
 			pointsInLeftToRemove = []
 			pointsInRightToRemove = []
 			#tangents is a pair of points
-			print('Line 41 and left type is')
-			print(type(left))
-			print('line 43 and right type is')
-			print(type(right))
 			topTangent = self.findTopTangent(left,right,pointsInLeftToRemove,pointsInRightToRemove)
 			botTangent = self.findBotTangent(left,right,pointsInLeftToRemove,pointsInRightToRemove)
 			tangents = []
@@ -51,25 +46,25 @@ class ConvexHullSolverThread(QThread):
 			tangents.append(QLineF(botTangent[0],botTangent[1]))
 			leftMostInRightHull = right[getLeftMost(right)]
 			rightMostInLeftHull = left[getRightMost(left)]
-			rightMostFoundTwice = foundTwiceinList(pointsInLeftToRemove,rightMostInLeftHull)
-			leftMostFoundTwice = foundTwiceinList(pointsInRightToRemove,leftMostInRightHull)
-			for i in pointsInLeftToRemove:
-				for j in range(0,len(left)):
-					if j < len(left) and left[j] == i:
-						if left[j] == rightMostInLeftHull:
-							if rightMostFoundTwice == True:
-								left.pop(j)
-						else:
-							left.pop(j)
-			for i in pointsInRightToRemove:
-				for j in range(0,len(right)):
-					if j < len(right) and right[j] == i:
-						if right[j] == leftMostInRightHull:
-							if leftMostFoundTwice == True:
-								right.pop(j)
-						else:
-							right.pop(j)
-			self.show_tangent.emit(tangents,(0,0,0))
+			#rightMostFoundTwice = foundTwiceinList(pointsInLeftToRemove,rightMostInLeftHull)
+			#leftMostFoundTwice = foundTwiceinList(pointsInRightToRemove,leftMostInRightHull)
+			#for i in pointsInLeftToRemove:
+			#	for j in range(0,len(left)):
+			#		if j < len(left) and left[j] == i:
+			#			if left[j] == rightMostInLeftHull:
+			#				if rightMostFoundTwice == True:
+			#					left.pop(j)
+			#			else:
+			#				left.pop(j)
+			#for i in pointsInRightToRemove:
+			#	for j in range(0,len(right)):
+			#		if j < len(right) and right[j] == i:
+			#			if right[j] == leftMostInRightHull:
+			#				if leftMostFoundTwice == True:
+			#					right.pop(j)
+			#			else:
+			#				right.pop(j)
+			#self.show_tangent.emit(tangents,(0,0,0))
 			hull = combineHalves(left,right,topTangent,botTangent)
 
 			return hull
@@ -81,15 +76,12 @@ class ConvexHullSolverThread(QThread):
 					polygon.append(QLineF(hull[i],hull[0]))
 				else:
 					polygon.append(QLineF(hull[i],hull[i+1]))
-			print('printing Hull and hull has length of:')
-			print(len(hull))
-			self.show_hull.emit(polygon,(255,0,0))
+			#self.show_hull.emit(polygon,(255,0,0))
 			return hull
 
 	def findTopTangent(self,leftHull, rightHull,pointsInLeftToRemove,pointsInRightToRemove):
 		leftMostIndex = getLeftMost(rightHull)
 		rightMostIndex = getRightMost(leftHull)
-		print('line 147')
 		#this is used to make sure we are moving clockwise or counterClockwise.
 		#Clockwise can be defined as increasing x values and values of y that are greater than the start point's y
 		rightHullOriginalY = rightHull[leftMostIndex].y()
@@ -98,6 +90,9 @@ class ConvexHullSolverThread(QThread):
 		deltaY = rightHull[leftMostIndex].y()-leftHull[leftMostIndex].y()
 		deltaX = rightHull[leftMostIndex].x()-leftHull[leftMostIndex].x()
 		currentslope =	deltaY/deltaX
+		#print('starting slope.  That is the, the slope between the leftMost and RightMost: ', currentslope)
+		#print('starting leftPoint: ', leftHull[rightMostIndex].x(), leftHull[rightMostIndex].y())
+		#print('starting rightPoint: ', rightHull[leftMostIndex].x(), rightHull[leftMostIndex].y())
 		#represents if the given side has a potential for moving around the hull more
 		leftCanMove = True
 		rightCanMove = True
@@ -123,11 +118,20 @@ class ConvexHullSolverThread(QThread):
 				#is the new slope better than previous slope
 				if tempSlope < currentslope:
 					currentslope = tempSlope
+					#print('found a better slope on left side')
+					#print('slope: ', currentslope)
+					#print(" left Point:" , leftHull[currentLeftHullIndex].x(), leftHull[currentLeftHullIndex].y())
+					#print('right point: ', rightHull[currentRightHullIndex].x(), rightHull[currentRightHullIndex].y())
 					#since we found a better point, we know the previous point
 					# won't be in our hull unless it is the original start point,
 					# in which case it might be the point used by the bottom tangent
-					print('putting the following index onto Points in left to remove')
-					print(previousLeftHullIndex)
+
+					tangentLine = []
+					self.erase_tangent.emit(tangentLine)
+					tangentLine.append(QLineF(leftHull[currentLeftHullIndex],rightHull[currentRightHullIndex]))
+					self.show_tangent.emit(tangentLine,(0,255,0))
+					#print('putting the following index onto Points in left to remove')
+					#print(previousLeftHullIndex)
 					pointsInLeftToRemove.append(leftHull[previousLeftHullIndex])
 					previousLeftHullIndex = currentLeftHullIndex
 					leftCanMove = True
@@ -151,9 +155,18 @@ class ConvexHullSolverThread(QThread):
 				deltaX = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x()
 				tempSlope = deltaY/deltaX
 				if tempSlope > currentslope:
-					print('line 207')
-					print('putting the following index onto Points in right to remove')
-					print(previousRightHullIndex)
+					currentslope = tempSlope
+					#print('found a better slope on right side')
+					#print('slope: ', currentslope)
+					#print(" left Point:" , leftHull[currentLeftHullIndex].x(), leftHull[currentLeftHullIndex].y())
+					#print('right point: ', rightHull[currentRightHullIndex].x(), rightHull[currentRightHullIndex].y())
+					#print('line 207')
+					#print('putting the following index onto Points in right to remove')
+					#print(previousRightHullIndex)
+					tangentLine = []
+					self.erase_tangent.emit(tangentLine)
+					tangentLine.append(QLineF(leftHull[currentLeftHullIndex],rightHull[currentRightHullIndex]))
+					self.show_tangent.emit(tangentLine,(0,255,0))
 					pointsInRightToRemove.append(rightHull[previousRightHullIndex])
 					previousRightHullIndex = currentRightHullIndex
 					rightCanMove = True
@@ -174,6 +187,9 @@ class ConvexHullSolverThread(QThread):
 		deltaY = rightHull[leftMostIndex].y()-leftHull[leftMostIndex].y()
 		deltaX = rightHull[leftMostIndex].x()-leftHull[leftMostIndex].x()
 		currentslope =	deltaY/deltaX
+		#print('starting slope.  That is the, the slope between the leftMost and RightMost: ', currentslope)
+		#print('starting leftPoint: ', leftHull[rightMostIndex].x(), leftHull[rightMostIndex].y())
+		#print('starting rightPoint: ', rightHull[leftMostIndex].x(), rightHull[leftMostIndex].y())
 		#represents if the given side has a potential for moving around the hull more
 		leftCanMove = True
 		rightCanMove = True
@@ -203,9 +219,14 @@ class ConvexHullSolverThread(QThread):
 				#is the new slope better than previous slope
 				if tempSlope > currentslope:
 					currentslope = tempSlope
-					print('line 207')
-					print('putting the following index onto Points in left to remove')
-					print(previousLeftHullIndex)
+					#print('found a better slope on left side')
+					#print('slope: ', currentslope)
+					#print(" left Point:" , leftHull[currentLeftHullIndex].x(), leftHull[currentLeftHullIndex].y())
+					#print('right point: ', rightHull[currentRightHullIndex].x(), rightHull[currentRightHullIndex].y())
+					tangentLine = []
+					self.erase_tangent.emit(tangentLine)
+					tangentLine.append(QLineF(leftHull[currentLeftHullIndex],rightHull[currentRightHullIndex]))
+					self.show_tangent.emit(tangentLine,(0,255,0))
 					pointsInLeftToRemove.append(leftHull[previousLeftHullIndex])
 					previousLeftHullIndex = currentLeftHullIndex
 					leftCanMove = True
@@ -226,10 +247,16 @@ class ConvexHullSolverThread(QThread):
 				deltaY = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y()
 				deltaX = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x()
 				tempSlope = deltaY/deltaX
-				if tempSlope > currentslope:
+				if tempSlope < currentslope:
 					currentSlope = tempSlope
-					print('putting the following index onto Points in left to remove')
-					print(previousRightHullIndex)
+					#print('found a better slope on right side')
+					#print('slope: ', currentslope)
+					#print(" left Point:" , leftHull[currentLeftHullIndex].x(), leftHull[currentLeftHullIndex].y())
+					#print('right point: ', rightHull[currentRightHullIndex].x(), rightHull[currentRightHullIndex].y())
+					tangentLine = []
+					self.erase_tangent.emit(tangentLine)
+					tangentLine.append(QLineF(leftHull[currentLeftHullIndex],rightHull[currentRightHullIndex]))
+					self.show_tangent.emit(tangentLine,(0,255,0))
 					pointsInRightToRemove.append(rightHull[previousRightHullIndex])
 					previousRightHullIndex = currentRightHullIndex
 					rightCanMove = True
@@ -263,12 +290,12 @@ class ConvexHullSolverThread(QThread):
 		t2 = time.time()
 		print('Time Elapsed (Sorting): {:3.3f} sec'.format(t2-t1))
 		print('printing all the points in order returned from merge sort')
-		for i in range (0,len(self.points)-1):
+		for i in range (0,len(self.points)):
 			print(self.points[i].x())
 
 		hullPoints = copy.deepcopy(self.points)										#Big-oh(n) where n is the number of poitns
 		t3 = time.time()
-		self.compute_hull(hullPoints)
+		finishedHull = self.compute_hull(hullPoints)
 		# TODO: COMPUTE THE CONVEX HULL USING DIVIDE AND CONQUER
 
 		t4 = time.time()
@@ -285,7 +312,13 @@ class ConvexHullSolverThread(QThread):
 
 		else:
 			# TODO: PASS THE CONVEX HULL LINES BACK TO THE GUI FOR DISPLAY
-			pass
+			hullLines = []
+			for i in range(0, len(finishedHull)):
+				if i == len(finishedHull)-1:
+					hullLines.append(QLineF(finishedHull[i],finishedHull[0]))
+				else:
+					hullLines.append(QLineF(finishedHull[i],finishedHull[i+1]))
+			self.show_hull.emit(hullLines,(0,0,255))
 
 		# send a signal to the GUI thread with the time used to compute the hull
 		self.display_text.emit('Time Elapsed (Convex Hull): {:3.3f} sec'.format(t4-t3))
@@ -295,20 +328,17 @@ class ConvexHullSolverThread(QThread):
 
 
 
-		#returns a hull that starts at the leftmostPoint and moves
-		# clockwise around through the points if there are three.
-		# otherwise, it just returns the two points
+	#returns a hull that starts at the leftmostPoint and moves
+	# clockwise around through the points if there are three.
+	# otherwise, it just returns the two points
 def makeHull(points):
 
 	if len(points) == 3:
+		print('heyo')
 		toReturn = [0,0,0]
-		print("lenght of the ToReturn list on line 118:")
-		print(len(toReturn))
-		print("length of the points passed in")
-		print(len(points))
 		toReturn[0] = points[0]
 		slopeA = (points[1].y() - points[0].y())/(points[1].x() - points[0].x())
-		slopeB = ((points[1].y() - points[0].y())/(points[1].x() - points[0].x()))
+		slopeB = ((points[2].y() - points[0].y())/(points[2].x() - points[0].x()))
 
 		if slopeB > slopeA:
 			toReturn[1] = points[2]
@@ -319,25 +349,18 @@ def makeHull(points):
 		return toReturn
 
 	else:
+		#there is no clockwise or counterClockwise for 2 points
 		return points
 
-
-
-
-
 def getLeftMost(hull):
-	#print('line 281')
-	#print(type(hull))
+
 	mostLeftX = 1.5
 	leftMostIndex = -1
 	for i in range(0,len(hull)):
 		if hull[i].x() < mostLeftX:
 			mostLeftX = hull[i].x()
 			leftMostIndex = i
-
-	#print('line 294')
 	return leftMostIndex
-
 
 def getRightMost(hull):
 	mostRightX = -1.5
@@ -352,48 +375,69 @@ def getRightMost(hull):
 	#topTangent and botTangent are arrays with two valuesself.
 	#the first value is the point of the left hull where the tangent connects
 	#the second value is the point of the right hull where the tangent connects
-def combineHalves(leftHalf, rightHalf, topTangent, botTangent):
-	#print('starting combine halves')
 
-	print(topTangent[0].x(),topTangent[0].y())
+def combineHalves(leftHalf, rightHalf, topTangent, botTangent):
+	print('printing left hull')
+	for i in leftHalf:
+		print (i.x(),i.y())
+	print('printing right hull')
+	for i in rightHalf:
+		print (i.x(), i.y())
+	print('Top tangent leftPoint: ', topTangent[0].x(),topTangent[0].y())
+	print('Top tangent rightPoint ', topTangent[1].x(),topTangent[1].y())
+	print('Bot Tangent leftPoint', botTangent[0].x(),botTangent[0].y())
+	print('Bot Tangent leftPoint', botTangent[1].x(),botTangent[1].y())
+
 	toReturn = []
 	foundTopTangent = False
 	foundBotTangent = False
 	i = 0
 	j = 0
 	for k in range (0,len(rightHalf)):
+		#index where the top tangent is in the rightHalf array
 		if rightHalf[k] == topTangent[1]:
 			j = k
 			break
 
 	#move around left until you hit the index where top tangent connects
 	while foundTopTangent == False:
-		#print('line 335')
+
 		toReturn.append(leftHalf[i])
-		i+=1
 		if leftHalf[i] == topTangent[0]:
 			foundTopTangent = True
+		i+=1
 	#move clockwise around right half until you hit where bot tangent connects
 	while foundBotTangent == False:
-
-		#print('line 339')
 		toReturn.append(rightHalf[j])
-		if j == len(rightHalf)-1 and len(rightHalf) > 2:
+		if rightHalf[j] == botTangent[1]:
+			foundBotTangent = True
+		if j == len(rightHalf)-1:
 			j = 0
 		else:
-			j +=1
-	for k in range(i,len(leftHalf)):
+			j+=1
+
+	#find index for bot tangent on left
+	#go backwards through the list because most likely, the bot Tangent is
+	#on the bottom of the hull/closer to the end of the list
+	print('lin422')
+	for k in range(len(leftHalf)-1, 0,-1):
+		print('line 424')
 		if leftHalf[k] == botTangent[0]:
 			i = k
+			print('line 425 and k and i = : ',k,i)
 			break
 	#finish moving around the bottom of the left hull from where the
 	# bot tangent connects to the the starting (leftMost) point
 	while i != len(leftHalf):
-		#print('line 350')
 		toReturn.append(leftHalf[i])
 		i+=1
+	print()
+	print()
+	print()
+	print('printing the combined hull')
+	for i in toReturn:
+		print (i.x())
 
-	#print('leaving combine halves')
 	return toReturn
 
 def foundTwiceinList(points, pointToCheck):
@@ -406,54 +450,6 @@ def foundTwiceinList(points, pointToCheck):
 			else:
 				foundOnce = True
 	return foundTwice
-
-
-
-#  d+c(hull)
-#  if hull size == 1
-#
-#  else
-#	cut hull in half
-#	lefthull = d+c(lefthalf of cut);
-#   rightHull = d+c(rightHalf of cut);
-#
-#	new LIST
-#   topTangent = find topTangent(leftHull, rightHull, LIST);
-#   botTangent = find botTangent(leftHull, rightHull LIST);
-#   return remove any unecessary POINTS(leftHull,rightHull,topTangent,botTangent)
-#		/* returns a pair of points*/
-#	findTopTangent(leftHull,rightHull){
-#		leftPoint = grap rightmost point in lefthull
-#		rightPoint = grab leftmost point in righthull
-#		moveleft = true;
-#       moveright = true;
-#		current slope = slope between leftPoint and rightPoint;
-#     while(moveleft || moveright){
-#			//if the left moved last
-#         if(moveleft)
-#			temp = get next point above on right;
-#			tempslope = slope between temp and leftPoint
-#			if tempslope > current slope:
-#				currentslope = tempslope;
-#				removePoint from LeftHull;
-#				rightPoint = temp;
-#				//we reset the moves.  Each time we move, we have to check both sides can't move.
-#				moveLeft = true;
-#				moveRight = true;
-#			else:
-#				moveLeft = false;
-#		  else if(moveRight):
-#			 temp = get next point above on the left;
-#			  tempSlope = the slope between temp and right point
-#			  if tempSlope < currentslopeL:
-#				remove point from rightHull
-#				currentslope = tempslope;
-#				left point = temp;
-#				//reset the moves
-#			  else:
-#				moveright = false;
-#
-#
 
 def mergeSort(points, leftIndex, rightIndex):
 	if leftIndex < rightIndex:
@@ -481,7 +477,7 @@ def merge(points, leftIndex, middleIndex, rightIndex):
 	i = 0
 	j = 0
 	k = leftIndex
-	#print (left[0].x())
+
 	while i < leftArraySize and j < rightArraySize:
 		if left[i].x() < right[j].x() :
 			points[k] = left[i]
