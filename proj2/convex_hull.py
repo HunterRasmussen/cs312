@@ -87,8 +87,8 @@ class ConvexHullSolverThread(QThread):
 		rightHullOriginalY = rightHull[leftMostIndex].y()
 		leftHullOriginalY = leftHull[rightMostIndex].y()
 		#slope = (y2-y1)/(x2-x1)
-		deltaY = rightHull[leftMostIndex].y()-leftHull[leftMostIndex].y()
-		deltaX = rightHull[leftMostIndex].x()-leftHull[leftMostIndex].x()
+		deltaY = rightHull[leftMostIndex].y()-leftHull[rightMostIndex].y()
+		deltaX = rightHull[leftMostIndex].x()-leftHull[rightMostIndex].x()
 		currentslope =	deltaY/deltaX
 		#print('starting slope.  That is the, the slope between the leftMost and RightMost: ', currentslope)
 		#print('starting leftPoint: ', leftHull[rightMostIndex].x(), leftHull[rightMostIndex].y())
@@ -100,6 +100,8 @@ class ConvexHullSolverThread(QThread):
 		previousRightHullIndex = leftMostIndex
 		currentLeftHullIndex = rightMostIndex
 		currentRightHullIndex = leftMostIndex
+		Xchange = 0
+		Ychange = 0
 		while leftCanMove or rightCanMove:
 			#print('line 164')
 			#moveLeft until it can't move anymore
@@ -112,9 +114,14 @@ class ConvexHullSolverThread(QThread):
 					currentLeftHullIndex -= 1
 				#currentLeftHullIndex = moveLeftCounterClockwise(previousLeftHullIndex, leftHullOriginalY)
 				#calculate slope
-				deltaY = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y()
-				deltaX = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x()
-				tempSlope = deltaY/deltaX
+				#print('currentLeftPoint ',leftHull[currentLeftHullIndex].x(),leftHull[currentLeftHullIndex].y())
+				#print('currentRightPoint',rightHull[currentRightHullIndex].x(),rightHull[currentRightHullIndex].y())
+				Ychange = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y()
+				Xchange = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x()
+				#print('ychange =',Ychange)
+				#print('xchange = ',Xchange)
+				tempSlope = Ychange/Xchange
+				#print('line 121 tempSlope',tempSlope)
 				#is the new slope better than previous slope
 				if tempSlope < currentslope:
 					currentslope = tempSlope
@@ -184,9 +191,12 @@ class ConvexHullSolverThread(QThread):
 		rightMostIndex = getRightMost(leftHull)
 		#this is used to make sure we are moving clockwise or counterClockwise.
 		#slope = (y2-y1)/(x2-x1)
-		deltaY = rightHull[leftMostIndex].y()-leftHull[leftMostIndex].y()
-		deltaX = rightHull[leftMostIndex].x()-leftHull[leftMostIndex].x()
+		deltaY = rightHull[leftMostIndex].y()-leftHull[rightMostIndex].y()
+		deltaX = rightHull[leftMostIndex].x()-leftHull[rightMostIndex].x()
 		currentslope =	deltaY/deltaX
+		print('currentLeftPoint ',leftHull[rightMostIndex].x(),leftHull[rightMostIndex].y())
+		print('currentRightPoint',rightHull[leftMostIndex].x(),rightHull[leftMostIndex].y())
+		print('original slope', currentslope)
 		#print('starting slope.  That is the, the slope between the leftMost and RightMost: ', currentslope)
 		#print('starting leftPoint: ', leftHull[rightMostIndex].x(), leftHull[rightMostIndex].y())
 		#print('starting rightPoint: ', rightHull[leftMostIndex].x(), rightHull[leftMostIndex].y())
@@ -207,11 +217,14 @@ class ConvexHullSolverThread(QThread):
 					currentLeftHullIndex = 0
 				else:
 					currentLeftHullIndex += 1
+				print('currentLeftPoint ',leftHull[currentLeftHullIndex].x(),leftHull[currentLeftHullIndex].y())
+				print('currentRightPoint',rightHull[currentRightHullIndex].x(),rightHull[currentRightHullIndex].y())
 				#currentLeftHullIndex = moveLeftClockwise(previousLeftHullIndex, leftHullOriginalY)
 				#calculate slope
 				deltaY = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y()
 				deltaX = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x()
 				tempSlope = deltaY/deltaX
+				print('line 227 tempSlope',tempSlope)
 				#print('line 255 and tempslope is')
 				#print(tempSlope)
 				#print('line 257 and currentSlope is')
@@ -223,10 +236,6 @@ class ConvexHullSolverThread(QThread):
 					#print('slope: ', currentslope)
 					#print(" left Point:" , leftHull[currentLeftHullIndex].x(), leftHull[currentLeftHullIndex].y())
 					#print('right point: ', rightHull[currentRightHullIndex].x(), rightHull[currentRightHullIndex].y())
-					tangentLine = []
-					self.erase_tangent.emit(tangentLine)
-					tangentLine.append(QLineF(leftHull[currentLeftHullIndex],rightHull[currentRightHullIndex]))
-					self.show_tangent.emit(tangentLine,(0,255,0))
 					pointsInLeftToRemove.append(leftHull[previousLeftHullIndex])
 					previousLeftHullIndex = currentLeftHullIndex
 					leftCanMove = True
@@ -242,13 +251,17 @@ class ConvexHullSolverThread(QThread):
 					currentRightHullIndex = len(rightHull)-1
 				else:
 					currentRightHullIndex -=1
+				print('currentLeftPoint ',leftHull[currentLeftHullIndex].x(),leftHull[currentLeftHullIndex].y())
+				print('currentRightPoint',rightHull[currentRightHullIndex].x(),rightHull[currentRightHullIndex].y())
 				#currentRightHullIndex = moveRightCounterClockwise(previousRightHullIndex, rightHullOriginalY)
 				#calculate slope
 				deltaY = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y()
 				deltaX = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x()
 				tempSlope = deltaY/deltaX
+				print('line 261currentslope ',currentslope)
+				print('line 262 tempSlope',tempSlope)
 				if tempSlope < currentslope:
-					currentSlope = tempSlope
+					currentslope = tempSlope
 					#print('found a better slope on right side')
 					#print('slope: ', currentslope)
 					#print(" left Point:" , leftHull[currentLeftHullIndex].x(), leftHull[currentLeftHullIndex].y())
@@ -386,7 +399,7 @@ def combineHalves(leftHalf, rightHalf, topTangent, botTangent):
 	print('Top tangent leftPoint: ', topTangent[0].x(),topTangent[0].y())
 	print('Top tangent rightPoint ', topTangent[1].x(),topTangent[1].y())
 	print('Bot Tangent leftPoint', botTangent[0].x(),botTangent[0].y())
-	print('Bot Tangent leftPoint', botTangent[1].x(),botTangent[1].y())
+	print('Bot Tangent rightPoint', botTangent[1].x(),botTangent[1].y())
 
 	toReturn = []
 	foundTopTangent = False
