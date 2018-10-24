@@ -33,14 +33,23 @@ class NetworkRoutingSolver:
 
     def computeShortestPaths( self, srcIndex, use_heap=False ):
         self.source = srcIndex
+        y = dir(self.network)
+        print(y)
+        l = dir(self.network.nodes[1])
+        print(l)
+        print((self.network.nodes[1].loc.x()))
+
         t1 = time.time()
         # TODO: RUN DIJKSTRA'S TO DETERMINE SHORTEST PATHS.
         #       ALSO, STORE THE RESULTS FOR THE SUBSEQUENT
         #       CALL TO getShortestPath(dest_index)
-        l = dir(self.network)
-        for i in self.network.nodes:
-            print(i)
-        print(l)
+        shortestPaths = []
+        for i in range(len(self.network.nodes)-1):
+            node = i;
+            node.dist = 10000
+            node.prev = -1;
+            if i == srcIndex:
+                node.dist = 0;
         if use_heap == False:
             int = 3;
         t2 = time.time()
