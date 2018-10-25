@@ -152,21 +152,18 @@ class NetworkRoutingSolver:
 
     def computeShortestPaths( self, srcIndex, use_heap=False ):
         self.source = srcIndex
-        #y = dir(self.network)
-        #print(y)
-        #l = dir(self.network.nodes[1])
-        #print(l)
-        #print((self.network.nodes[1].loc.x()))
-        #self.network.nodes[1].addEdge(4,400);
-        #z = dir(self.network.nodes[1]);
         t1 = time.time()
         listOfNodes = []        #lst to keep distances and previous
         if use_heap == False:
+            #this stores all the distances and their previous nodes
             distanceArray = []
+            #this is the priority queue
             unvisitedNodes = ArrayQueue()
             unvisitedNodes.listOfNodes = []
+            #for every node, add it to both our holder and our queue
             for i in range(len(self.network.nodes)-1):
                 temp = self.network.nodes[i]
+                #source node
                 if temp.node_id == srcIndex:
                     node = makeNode(temp.node_id,temp.node_id,0)
                     unvisitedNodes.insert(node)
@@ -178,7 +175,7 @@ class NetworkRoutingSolver:
                     distanceArray.append(node)
 
             while len(unvisitedNodes.listOfNodes) > 0:
-                #grab the smallest distanced node
+                #grab the node with the smallest distance
                 currentKey = unvisitedNodes.deleteMin()
 
                 graphNode = self.network.nodes[currentKey.id]
@@ -189,14 +186,14 @@ class NetworkRoutingSolver:
                     for j in range(len(distanceArray)-1):
                         if i.dest.node_id == distanceArray[j].id:
                             distanceNodeIndex = j;
+                    #compare current distance with actual distance
                     if newdist < distanceArray[distanceNodeIndex].dist:
                         distanceArray[distanceNodeIndex].dist = newdist
                         distanceArray[distanceNodeIndex].prev = i.src.node_id
                         for j  in range(len(unvisitedNodes.listOfNodes)-1):
                             if unvisitedNodes.listOfNodes[j].id == i.dest.node_id:
                                 unvisitedNodes.decreaseKey(j,newdist)
+            #save results onto self
             self.dijkstraPaths = distanceArray;
-
-
         t2 = time.time()
         return (t2-t1)
