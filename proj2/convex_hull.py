@@ -27,156 +27,104 @@ class ConvexHullSolverThread(QThread):
 	def __del__(self):
 		self.wait()
 
-	def compute_hull(self,points):
-		self.erase_hull.emit(points)
-		if len(points) > 3:
-			m = math.floor(len(points)/2)
-			lefthalf = points[:m]
-			righthalf = points[m:]
+	def compute_hull(self,points):												# Since this is a recursive function that cuts the problem in
+																				# half each time, it will execute a maximum of log(n) times
+																				#where log(n) is the number of points to start
+																				#then, accounting for each of the method calls in the method
+																				# gives us bigO(n+n+n)*bigO(log(n)) = bigO(3nlog(n))
+																				#    = bigO(nlog(n))
+																				#The total space complexity is bigO(2n) because there is
+																				#the starting array of points, then an array that gets made
+																				#for the set of points that make up the hull
+																				#this second set could contain all the original points
+																				#in a worst case scenario so ultimately bigO(n)
+		if len(points) > 3:														#
+			m = math.floor(len(points)/2)										#
+			lefthalf = points[:m]												# time = O(n) space = bigO(1/2n)
+			righthalf = points[m:]												# time = O(n) space = bigO(1/2n)
 			left = self.compute_hull(lefthalf)
 			right = self.compute_hull(righthalf)
 			#these will contain the  points that no longer belong in the hull
 			pointsInLeftToRemove = []
 			pointsInRightToRemove = []
 			#tangents is a pair of points
-			topTangent = self.findTopTangent(left,right,pointsInLeftToRemove,pointsInRightToRemove)
-			botTangent = self.findBotTangent(left,right,pointsInLeftToRemove,pointsInRightToRemove)
-			tangents = []
-			tangents.append(QLineF(topTangent[0],topTangent[1]))
-			tangents.append(QLineF(botTangent[0],botTangent[1]))
-			leftMostInRightHull = right[getLeftMost(right)]
-			rightMostInLeftHull = left[getRightMost(left)]
-			#rightMostFoundTwice = foundTwiceinList(pointsInLeftToRemove,rightMostInLeftHull)
-			#leftMostFoundTwice = foundTwiceinList(pointsInRightToRemove,leftMostInRightHull)
-			#for i in pointsInLeftToRemove:
-			#	for j in range(0,len(left)):
-			#		if j < len(left) and left[j] == i:
-			#			if left[j] == rightMostInLeftHull:
-			#				if rightMostFoundTwice == True:
-			#					left.pop(j)
-			#			else:
-			#				left.pop(j)
-			#for i in pointsInRightToRemove:
-			#	for j in range(0,len(right)):
-			#		if j < len(right) and right[j] == i:
-			#			if right[j] == leftMostInRightHull:
-			#				if leftMostFoundTwice == True:
-			#					right.pop(j)
-			#			else:
-			#				right.pop(j)
-			#self.show_tangent.emit(tangents,(0,0,0))
-			hull = combineHalves(left,right,topTangent,botTangent)
-
+			topTangent = self.findTopTangent(left,right,						#time = bigO(n) space = bigO(1)
+			pointsInLeftToRemove,pointsInRightToRemove)
+			botTangent = self.findBotTangent(left,								#time = bigO(n) space = bigO(1)
+			right,pointsInLeftToRemove,pointsInRightToRemove)
+			hull = combineHalves(left,right,topTangent,botTangent)				#time = bigO(n) space = bigO(n)
 			return hull
 		else:
-			hull = makeHull(points)
-			polygon = []
-			for i in range(0, len(hull)):
-				if i == len(hull)-1:
-					polygon.append(QLineF(hull[i],hull[0]))
-				else:
-					polygon.append(QLineF(hull[i],hull[i+1]))
-			#self.show_hull.emit(polygon,(255,0,0))
+			hull = makeHull(points)												#constant bigO(1)
 			return hull
 
-	def findTopTangent(self,leftHull, rightHull,pointsInLeftToRemove,pointsInRightToRemove):
-		leftMostIndex = getLeftMost(rightHull)
-		rightMostIndex = getRightMost(leftHull)
-		#this is used to make sure we are moving clockwise or counterClockwise.
-		#Clockwise can be defined as increasing x values and values of y that are greater than the start point's y
-		rightHullOriginalY = rightHull[leftMostIndex].y()
-		leftHullOriginalY = leftHull[rightMostIndex].y()
+	def findTopTangent(self,leftHull, rightHull,								#TotalTime Complexity = bigO(n) + bigO(n) + bigO(n)
+	pointsInLeftToRemove,pointsInRightToRemove):								#TotalSpace Complexity = big. There aren't any things greater
+																				# than individual points stored or a slope used in this
+																				#and it doesn't ever change from iteration to iteration
+		leftMostIndex = getLeftMost(rightHull)									#bigO(n)
+		rightMostIndex = getRightMost(leftHull)									#bigO(n)
+		#this is used to make sure we are moving clockwise
+		# or counterClockwise.
+		#Clockwise can be defined as increasing x values
+		# and values of y that are greater than the start point's y
+		rightHullOriginalY = rightHull[leftMostIndex].y()						#
+		leftHullOriginalY = leftHull[rightMostIndex].y()						#(1)
 		#slope = (y2-y1)/(x2-x1)
-		deltaY = rightHull[leftMostIndex].y()-leftHull[rightMostIndex].y()
-		deltaX = rightHull[leftMostIndex].x()-leftHull[rightMostIndex].x()
-		currentslope =	deltaY/deltaX
-		#print('starting slope.  That is the, the slope between the leftMost and RightMost: ', currentslope)
-		#print('starting leftPoint: ', leftHull[rightMostIndex].x(), leftHull[rightMostIndex].y())
-		#print('starting rightPoint: ', rightHull[leftMostIndex].x(), rightHull[leftMostIndex].y())
-		#represents if the given side has a potential for moving around the hull more
-		leftCanMove = True
-		rightCanMove = True
-		previousLeftHullIndex = rightMostIndex
+		deltaY = rightHull[leftMostIndex].y()-leftHull[rightMostIndex].y()		#
+		deltaX = rightHull[leftMostIndex].x()-leftHull[rightMostIndex].x()		#
+		currentslope =	deltaY/deltaX											#
+		leftCanMove = True														#
+		rightCanMove = True														#
+		previousLeftHullIndex = rightMostIndex									#
 		previousRightHullIndex = leftMostIndex
 		currentLeftHullIndex = rightMostIndex
 		currentRightHullIndex = leftMostIndex
-		Xchange = 0
-		Ychange = 0
-		while leftCanMove or rightCanMove:
-			#print('line 164')
+		while leftCanMove or rightCanMove:										#this can iterate n+m times in theory.  n and m are the Number
+																				# of points in the leftHull and RightHull.  Let n be bigger of
+																				# the two.  That makse this loop
+																				#bigO(2n) = bigO(n)
 			#moveLeft until it can't move anymore
-			while leftCanMove:
-				#print('line 167')
+			while leftCanMove:													#in worse case can happen for all points of leftHull
+																				# therefore bigO(n)
 				#get the next point counterClockwise from current point
-				if currentLeftHullIndex == 0:
-					currentLeftHullIndex = len(leftHull)-1
+				if currentLeftHullIndex == 0:									#
+					currentLeftHullIndex = len(leftHull)-1						#
 				else:
-					currentLeftHullIndex -= 1
-				#currentLeftHullIndex = moveLeftCounterClockwise(previousLeftHullIndex, leftHullOriginalY)
+					currentLeftHullIndex -= 1									#
 				#calculate slope
-				#print('currentLeftPoint ',leftHull[currentLeftHullIndex].x(),leftHull[currentLeftHullIndex].y())
-				#print('currentRightPoint',rightHull[currentRightHullIndex].x(),rightHull[currentRightHullIndex].y())
-				Ychange = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y()
-				Xchange = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x()
-				#print('ychange =',Ychange)
-				#print('xchange = ',Xchange)
-				tempSlope = Ychange/Xchange
-				#print('line 121 tempSlope',tempSlope)
+				Ychange = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y() #
+				Xchange = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x() #
+				tempSlope = Ychange/Xchange										#
 				#is the new slope better than previous slope
-				if tempSlope < currentslope:
-					currentslope = tempSlope
-					#print('found a better slope on left side')
-					#print('slope: ', currentslope)
-					#print(" left Point:" , leftHull[currentLeftHullIndex].x(), leftHull[currentLeftHullIndex].y())
-					#print('right point: ', rightHull[currentRightHullIndex].x(), rightHull[currentRightHullIndex].y())
-					#since we found a better point, we know the previous point
-					# won't be in our hull unless it is the original start point,
-					# in which case it might be the point used by the bottom tangent
-
-					tangentLine = []
-					self.erase_tangent.emit(tangentLine)
-					tangentLine.append(QLineF(leftHull[currentLeftHullIndex],rightHull[currentRightHullIndex]))
-					self.show_tangent.emit(tangentLine,(0,255,0))
-					#print('putting the following index onto Points in left to remove')
-					#print(previousLeftHullIndex)
-					pointsInLeftToRemove.append(leftHull[previousLeftHullIndex])
-					previousLeftHullIndex = currentLeftHullIndex
-					leftCanMove = True
-					rightCanMove = True
+				if tempSlope < currentslope:									#
+					currentslope = tempSlope									#
+					previousLeftHullIndex = currentLeftHullIndex				#
+					leftCanMove = True											#
+					rightCanMove = True											#
 
 				else:
-					leftCanMove = False
+					leftCanMove = False											#
 					#move back to the one we know works as a potential tangent
-					currentLeftHullIndex = previousLeftHullIndex
+					currentLeftHullIndex = previousLeftHullIndex				#
 			#move around Right Hull until it can't move anymore
-			while rightCanMove:
-				#print('line 195')
+			while rightCanMove:													#worst case scenario is every point so
+																				# bigO(n)
 				#get next point clockwise from currentPoint
-				if currentRightHullIndex == len(rightHull)-1:
-					currentRightHullIndex = 0
+				if currentRightHullIndex == len(rightHull)-1:					#
+					currentRightHullIndex = 0									#
 				else:
-					currentRightHullIndex += 1
+					currentRightHullIndex += 1									#
 				#currentRightHullIndex = moveRightClockwise(previousRightHullIndex, rightHullOriginalY)
 				#calculate slope
-				deltaY = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y()
-				deltaX = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x()
-				tempSlope = deltaY/deltaX
-				if tempSlope > currentslope:
-					currentslope = tempSlope
-					#print('found a better slope on right side')
-					#print('slope: ', currentslope)
-					#print(" left Point:" , leftHull[currentLeftHullIndex].x(), leftHull[currentLeftHullIndex].y())
-					#print('right point: ', rightHull[currentRightHullIndex].x(), rightHull[currentRightHullIndex].y())
-					#print('line 207')
-					#print('putting the following index onto Points in right to remove')
-					#print(previousRightHullIndex)
-					tangentLine = []
-					self.erase_tangent.emit(tangentLine)
-					tangentLine.append(QLineF(leftHull[currentLeftHullIndex],rightHull[currentRightHullIndex]))
-					self.show_tangent.emit(tangentLine,(0,255,0))
-					pointsInRightToRemove.append(rightHull[previousRightHullIndex])
-					previousRightHullIndex = currentRightHullIndex
-					rightCanMove = True
+				deltaY = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y() #
+				deltaX = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x() #
+				tempSlope = deltaY/deltaX										#
+				if tempSlope > currentslope:									#
+					currentslope = tempSlope									#
+					tangentLine = []											#
+					previousRightHullIndex = currentRightHullIndex				#
+					rightCanMove = True											#
 					leftCanMove = True
 
 				else:
@@ -185,8 +133,8 @@ class ConvexHullSolverThread(QThread):
 
 		return [leftHull[currentLeftHullIndex], rightHull[currentRightHullIndex]]
 
-	def findBotTangent(self,leftHull, rightHull, pointsInLeftToRemove,pointsInRightToRemove):
-		#print('line 219')
+	def findBotTangent(self,leftHull, rightHull,								#See "findTopTangent" for bigO.  They're the same
+	 pointsInLeftToRemove,pointsInRightToRemove):
 		leftMostIndex = getLeftMost(rightHull)
 		rightMostIndex = getRightMost(leftHull)
 		#this is used to make sure we are moving clockwise or counterClockwise.
@@ -194,12 +142,6 @@ class ConvexHullSolverThread(QThread):
 		deltaY = rightHull[leftMostIndex].y()-leftHull[rightMostIndex].y()
 		deltaX = rightHull[leftMostIndex].x()-leftHull[rightMostIndex].x()
 		currentslope =	deltaY/deltaX
-		print('currentLeftPoint ',leftHull[rightMostIndex].x(),leftHull[rightMostIndex].y())
-		print('currentRightPoint',rightHull[leftMostIndex].x(),rightHull[leftMostIndex].y())
-		print('original slope', currentslope)
-		#print('starting slope.  That is the, the slope between the leftMost and RightMost: ', currentslope)
-		#print('starting leftPoint: ', leftHull[rightMostIndex].x(), leftHull[rightMostIndex].y())
-		#print('starting rightPoint: ', rightHull[leftMostIndex].x(), rightHull[leftMostIndex].y())
 		#represents if the given side has a potential for moving around the hull more
 		leftCanMove = True
 		rightCanMove = True
@@ -208,35 +150,20 @@ class ConvexHullSolverThread(QThread):
 		currentLeftHullIndex = rightMostIndex
 		currentRightHullIndex = leftMostIndex
 		while leftCanMove or rightCanMove:
-			#print('line 241')
 			#moveLeft until it can't move anymore
 			while leftCanMove:
-				#print('line 244 and currentLeftHullIndex is:')
-				#print(currentLeftHullIndex)
 				if currentLeftHullIndex == len(leftHull)-1:
 					currentLeftHullIndex = 0
 				else:
 					currentLeftHullIndex += 1
-				print('currentLeftPoint ',leftHull[currentLeftHullIndex].x(),leftHull[currentLeftHullIndex].y())
-				print('currentRightPoint',rightHull[currentRightHullIndex].x(),rightHull[currentRightHullIndex].y())
 				#currentLeftHullIndex = moveLeftClockwise(previousLeftHullIndex, leftHullOriginalY)
 				#calculate slope
 				deltaY = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y()
 				deltaX = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x()
 				tempSlope = deltaY/deltaX
-				print('line 227 tempSlope',tempSlope)
-				#print('line 255 and tempslope is')
-				#print(tempSlope)
-				#print('line 257 and currentSlope is')
-				#print(currentslope)
 				#is the new slope better than previous slope
 				if tempSlope > currentslope:
 					currentslope = tempSlope
-					#print('found a better slope on left side')
-					#print('slope: ', currentslope)
-					#print(" left Point:" , leftHull[currentLeftHullIndex].x(), leftHull[currentLeftHullIndex].y())
-					#print('right point: ', rightHull[currentRightHullIndex].x(), rightHull[currentRightHullIndex].y())
-					pointsInLeftToRemove.append(leftHull[previousLeftHullIndex])
 					previousLeftHullIndex = currentLeftHullIndex
 					leftCanMove = True
 					rightCanMove = True
@@ -245,32 +172,17 @@ class ConvexHullSolverThread(QThread):
 					#move back to the one we know works as a potential tangent
 					currentLeftHullIndex = previousLeftHullIndex
 			while rightCanMove:
-				#print('line 266')
 				#get next point clockwise from currentPoint
 				if currentRightHullIndex == 0:
 					currentRightHullIndex = len(rightHull)-1
 				else:
 					currentRightHullIndex -=1
-				print('currentLeftPoint ',leftHull[currentLeftHullIndex].x(),leftHull[currentLeftHullIndex].y())
-				print('currentRightPoint',rightHull[currentRightHullIndex].x(),rightHull[currentRightHullIndex].y())
-				#currentRightHullIndex = moveRightCounterClockwise(previousRightHullIndex, rightHullOriginalY)
 				#calculate slope
 				deltaY = rightHull[currentRightHullIndex].y() - leftHull[currentLeftHullIndex].y()
 				deltaX = rightHull[currentRightHullIndex].x() - leftHull[currentLeftHullIndex].x()
 				tempSlope = deltaY/deltaX
-				print('line 261currentslope ',currentslope)
-				print('line 262 tempSlope',tempSlope)
 				if tempSlope < currentslope:
 					currentslope = tempSlope
-					#print('found a better slope on right side')
-					#print('slope: ', currentslope)
-					#print(" left Point:" , leftHull[currentLeftHullIndex].x(), leftHull[currentLeftHullIndex].y())
-					#print('right point: ', rightHull[currentRightHullIndex].x(), rightHull[currentRightHullIndex].y())
-					tangentLine = []
-					self.erase_tangent.emit(tangentLine)
-					tangentLine.append(QLineF(leftHull[currentLeftHullIndex],rightHull[currentRightHullIndex]))
-					self.show_tangent.emit(tangentLine,(0,255,0))
-					pointsInRightToRemove.append(rightHull[previousRightHullIndex])
 					previousRightHullIndex = currentRightHullIndex
 					rightCanMove = True
 					leftCanMove = True
@@ -302,9 +214,9 @@ class ConvexHullSolverThread(QThread):
 		mergeSort(self.points,0,n-1)
 		t2 = time.time()
 		print('Time Elapsed (Sorting): {:3.3f} sec'.format(t2-t1))
-		print('printing all the points in order returned from merge sort')
-		for i in range (0,len(self.points)):
-			print(self.points[i].x())
+	#	print('printing all the points in order returned from merge sort')
+	#	for i in range (0,len(self.points)):
+	#		print(self.points[i].x(),"  ",self.points[i].y())
 
 		hullPoints = copy.deepcopy(self.points)										#Big-oh(n) where n is the number of poitns
 		t3 = time.time()
@@ -344,10 +256,13 @@ class ConvexHullSolverThread(QThread):
 	#returns a hull that starts at the leftmostPoint and moves
 	# clockwise around through the points if there are three.
 	# otherwise, it just returns the two points
-def makeHull(points):
+def makeHull(points):															#time complexity = constant.
+																				# because this method only gets called on the base
+																				#case for compute_hull.  So at most, there are 3 points
+																				#min 2 points.
+																				#Space complexity = constant for the same reasons
 
 	if len(points) == 3:
-		print('heyo')
 		toReturn = [0,0,0]
 		toReturn[0] = points[0]
 		slopeA = (points[1].y() - points[0].y())/(points[1].x() - points[0].x())
@@ -365,9 +280,8 @@ def makeHull(points):
 		#there is no clockwise or counterClockwise for 2 points
 		return points
 
-def getLeftMost(hull):
-
-	mostLeftX = 1.5
+def getLeftMost(hull):															#bigO(n) because it can iterate through potentially everyPoint
+	mostLeftX = 1.5																# before finding the most extreme.  N is the number of points in hull
 	leftMostIndex = -1
 	for i in range(0,len(hull)):
 		if hull[i].x() < mostLeftX:
@@ -375,7 +289,7 @@ def getLeftMost(hull):
 			leftMostIndex = i
 	return leftMostIndex
 
-def getRightMost(hull):
+def getRightMost(hull):															#same bigO as getLeftMost()
 	mostRightX = -1.5
 	rightMostIndex = -1
 	for i in range(0,len(hull)):
@@ -389,38 +303,38 @@ def getRightMost(hull):
 	#the first value is the point of the left hull where the tangent connects
 	#the second value is the point of the right hull where the tangent connects
 
-def combineHalves(leftHalf, rightHalf, topTangent, botTangent):
-	print('printing left hull')
-	for i in leftHalf:
-		print (i.x(),i.y())
-	print('printing right hull')
-	for i in rightHalf:
-		print (i.x(), i.y())
-	print('Top tangent leftPoint: ', topTangent[0].x(),topTangent[0].y())
-	print('Top tangent rightPoint ', topTangent[1].x(),topTangent[1].y())
-	print('Bot Tangent leftPoint', botTangent[0].x(),botTangent[0].y())
-	print('Bot Tangent rightPoint', botTangent[1].x(),botTangent[1].y())
-
+def combineHalves(leftHalf, rightHalf, topTangent, botTangent):					#space complexity = bigO(2n) where n is the number of points
+																				# in left half or right half (whichever is bigger)
+																				#because we end up with an array with all the points on the hull
+																				#which in worst case, could be each of the original points
+																				# time complexity: I have 2 for loops and 2 while loops that all run
+																				#at bigO(n) which makes bigO(4n)
+																				# therefore time complexity = bigO(n)
 	toReturn = []
 	foundTopTangent = False
 	foundBotTangent = False
 	i = 0
 	j = 0
-	for k in range (0,len(rightHalf)):
-		#index where the top tangent is in the rightHalf array
+	foundTheTopTangentInRightHull = False
+	for k in range (0,len(rightHalf)):											#timecomplexity = bigO(n) where n is the number of
+																				#points in righthalf
+		#index where the top tangent is in the rightHalf array					# because it could not find a tangent until the very end
+
 		if rightHalf[k] == topTangent[1]:
 			j = k
+			foundTheTopTangentInRightHull = True
 			break
-
 	#move around left until you hit the index where top tangent connects
-	while foundTopTangent == False:
+	while foundTopTangent == False:												#bigO(n) as we could travel all the way around
+																				# and not find the tangent until the very end of the half
 
 		toReturn.append(leftHalf[i])
 		if leftHalf[i] == topTangent[0]:
 			foundTopTangent = True
 		i+=1
 	#move clockwise around right half until you hit where bot tangent connects
-	while foundBotTangent == False:
+	while foundBotTangent == False:												#bigO(n) as we could travel all the way around
+																				# and not find the tangent until the end of the half
 		toReturn.append(rightHalf[j])
 		if rightHalf[j] == botTangent[1]:
 			foundBotTangent = True
@@ -432,37 +346,21 @@ def combineHalves(leftHalf, rightHalf, topTangent, botTangent):
 	#find index for bot tangent on left
 	#go backwards through the list because most likely, the bot Tangent is
 	#on the bottom of the hull/closer to the end of the list
-	print('lin422')
-	for k in range(len(leftHalf)-1, 0,-1):
-		print('line 424')
+	foundTangent = False
+	for k in range(len(leftHalf)-1, 0,-1):										#bigO(n) for the same reasons as up above
 		if leftHalf[k] == botTangent[0]:
 			i = k
-			print('line 425 and k and i = : ',k,i)
+			foundTangent = True
 			break
 	#finish moving around the bottom of the left hull from where the
 	# bot tangent connects to the the starting (leftMost) point
-	while i != len(leftHalf):
-		toReturn.append(leftHalf[i])
-		i+=1
-	print()
-	print()
-	print()
-	print('printing the combined hull')
-	for i in toReturn:
-		print (i.x())
-
+	if foundTangent == True:
+		#toReturn.append(leftHalf[0])
+		while i != len(leftHalf):												#bigO(n) because we might have to travel all the way around
+																				# the half of the hull until we reach the end.
+			toReturn.append(leftHalf[i])
+			i+=1
 	return toReturn
-
-def foundTwiceinList(points, pointToCheck):
-	foundOnce = False
-	foundTwice = False
-	for i in points:
-		if i == pointToCheck:
-			if foundOnce == True:
-				foundTwice = True
-			else:
-				foundOnce = True
-	return foundTwice
 
 def mergeSort(points, leftIndex, rightIndex):
 	if leftIndex < rightIndex:
