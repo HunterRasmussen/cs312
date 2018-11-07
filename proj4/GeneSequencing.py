@@ -62,6 +62,8 @@ class GeneSequencing:
 				if banded:
 					hi = 0
 				else:
+					sequence1 = sequences[i]
+					sequence2 = sequences[j]
 					seq1Length = len(sequences[i])
 					seq2Length = len(sequences[j])
 					#sequence 1 is the column/spans the top of the table
@@ -73,20 +75,43 @@ class GeneSequencing:
 					cost = 0
 					#populate 1st row with multiples of five
 					for k in range(seq1Length):
-						results[0][i] = cost
+						results[0][k] = cost
 						cost += 5
 
 					cost = 0
 					#populate 1st column with multiples of 5
 					for k in range(seq2Length):
-						results[i][0] = cost
+						results[k][0] = cost
 						cost +=5
 
 
+
+
 					#calculate cost for the rest
-					for l in range(seq2Length):
-						for m in range(seq1Length):
-							
+					for l in range(1,seq2Length):
+						for m in range(1,seq1Length):
+							left = (results[l][m-1])+5
+							up = (results[l-1][m])+5
+							diagonal = 0
+							#is it a match of sub?
+							if(sequence2[l] == sequence1[m]):
+								diagonal = results[l-1][m-1] - 3
+							else:
+								diagonal = results[l-1][m-1] + 1
+							if left < up and left < diagonal:
+								results[l][m] = left
+							elif up  < left and up < diagonal:
+								results[l][m] = up
+							else:
+								results[l][m] = diagonal
+
+					if i < 2 and j < 2:
+						for w in range(seq2Length):
+							for x in range(seq1Length):
+								print(results[w][x], end = ' ')
+							print('')
+						print('')
+						print('')
 
 				if(j < i):
 					s = {}
