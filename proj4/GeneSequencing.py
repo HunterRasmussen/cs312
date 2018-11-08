@@ -59,6 +59,7 @@ class GeneSequencing:
 		for i in range(len(sequences)):
 			jresults = []
 			for j in range(len(sequences)):
+				print("looking at sequence ", i, " and sequence ", j)
 				if banded:
 					hi = 0
 				else:
@@ -69,32 +70,55 @@ class GeneSequencing:
 					#sequence 1 is the column/spans the top of the table
 					#sequence 2 is the row / spans the side of the table
 					#make all cells have a value 0
-					results = [[0 for x in range(seq1Length)] for y in range(seq2Length)]
-					pointers = [[0 for x in range(seq1Length)] for y in range(seq2Length)]
+					#results = [[0 for x in range(seq1Length+1)] for y in range(seq2Length+1)]
+					#pointers = [[0 for x in range(seq1Length+1)] for y in range(seq2Length+1)]
+					columns = [None]*(seq1Length+1)
+					#results = [columns]*(seq2Length+1)
 
+					#although I am using only one list, I treat is as a matrix.
+					#after having gone the length of seq
+					results = (seq2Length+1) * (seq1Length+1) * [math.inf]
 					cost = 0
 					#populate 1st row with multiples of five
-					for k in range(seq1Length):
-						results[0][k] = cost
-						cost += 5
+					print('populating 1st row')
+					for k in range(seq1Length+1):
+						results[k] = cost
+						cost+=5
 
 					cost = 0
 					#populate 1st column with multiples of 5
-					for k in range(seq2Length):
-						results[k][0] = cost
-						cost +=5
+					#start at the beginning of the second row
+					#
+					index = seq1Length+1
+					for k in range(seq2Length+1):
+						results[index] = cost
+						cost+=5
+						#move to the next "row"
+						index+=(seq1Length+1)
+
+					# for k in range(seq1Length+1):
+					# 	results[0][k] = cost
+					# 	cost += 5
+
+					# cost = 0
+					# #populate 1st column with multiples of 5
+					# print('populating 1st column')
+					# for k in range(seq2Length+1):
+					# 	results[k][0] = cost
+					# 	cost +=5
 
 
 
 
 					#calculate cost for the rest
-					for l in range(1,seq2Length):
-						for m in range(1,seq1Length):
+					print('populating the rest')
+					for l in range(1,seq2Length+1):
+						for m in range(1,seq1Length+1):
 							left = (results[l][m-1])+5
 							up = (results[l-1][m])+5
 							diagonal = 0
 							#is it a match of sub?
-							if(sequence2[l] == sequence1[m]):
+							if(sequence2[l-1] == sequence1[m-1]):
 								diagonal = results[l-1][m-1] - 3
 							else:
 								diagonal = results[l-1][m-1] + 1
@@ -105,28 +129,36 @@ class GeneSequencing:
 							else:
 								results[l][m] = diagonal
 
-					if i < 2 and j < 2:
-						for w in range(seq2Length):
-							for x in range(seq1Length):
-								print(results[w][x], end = ' ')
-							print('')
-						print('')
-						print('')
+					# if i < 2 and j < 2:
+					# 	print(end='- - ')
+					# 	for u in range(seq1Length):
+					# 		print(sequence1[u], end = ' ')
+					# 	print('')
+					# 	for w in range(seq2Length+1):
+					# 		if w == 0:
+					# 			print ('-', end = ' ')
+					# 		else:
+					# 			print(sequence2[w-1], end = ' ');
+					# 		for x in range(seq1Length+1):
+					# 			print(results[w][x], end = ' ')
+					# 		print('')
+					# 	print('')
+					# 	print('')
 
 				if(j < i):
 					s = {}
-				else:
+				#else:
 ###################################################################################################
 # your code should replace these three statements and populate the three variables: score, alignment1 and alignment2
-					score = i+j;
-					alignment1 = 'abc-easy  DEBUG:(seq{}, {} chars,align_len={}{})'.format(i+1,
-						len(sequences[i]), align_length, ',BANDED' if banded else '')
-					alignment2 = 'as-123--  DEBUG:(seq{}, {} chars,align_len={}{})'.format(j+1,
-						len(sequences[j]), align_length, ',BANDED' if banded else '')
-###################################################################################################
-					s = {'align_cost':score, 'seqi_first100':alignment1, 'seqj_first100':alignment2}
-					table.item(i,j).setText('{}'.format(int(score) if score != math.inf else score))
-					table.repaint()
-				jresults.append(s)
-			results.append(jresults)
-		return results
+# 					score = i+j;
+# 					alignment1 = 'abc-easy  DEBUG:(seq{}, {} chars,align_len={}{})'.format(i+1,
+# 						len(sequences[i]), align_length, ',BANDED' if banded else '')
+# 					alignment2 = 'as-123--  DEBUG:(seq{}, {} chars,align_len={}{})'.format(j+1,
+# 						len(sequences[j]), align_length, ',BANDED' if banded else '')
+# ###################################################################################################
+# 					s = {'align_cost':score, 'seqi_first100':alignment1, 'seqj_first100':alignment2}
+# 					table.item(i,j).setText('{}'.format(int(score) if score != math.inf else score))
+# 					table.repaint()
+				#jresults.append(s)
+			#results.append(jresults)
+		#return results
