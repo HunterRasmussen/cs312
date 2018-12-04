@@ -71,79 +71,80 @@ class GeneSequencing:
 		for i in range(len(sequences)):
 			jresults = []
 			for j in range(len(sequences)):
-				print("looking at sequence ", i, " and sequence ", j)
-				if banded:
-					hi = 0
-				else:
-					sequence1 = sequences[i]
-					sequence2 = sequences[j]
-					seq1Length = len(sequences[i])
-					seq2Length = len(sequences[j])
-					adjustedLength1 = seq1Length + 1
-					adjustedLength2 = seq2Length + 1
-					#print('adjustedLength1 =' ,adjustedLength1,' adjusted length2 = ',adjustedLength2)
-					#sequence 1 is the columns/spans the top of the table
-					#sequence 2 is the row / spans the side of the table
-					#make all cells have a value 0
-					#results = [[0 for x in range(seq1Length+1)] for y in range(seq2Length+1)]
-					#pointers = [[0 for x in range(seq1Length+1)] for y in range(seq2Length+1)]
+				if (j <= i):
+					print("looking at sequence ", i, " and sequence ", j)
+					if banded:
+						hi = 0
+					else:
+						sequence1 = sequences[i]
+						sequence2 = sequences[j]
+						seq1Length = len(sequences[i])
+						seq2Length = len(sequences[j])
+						adjustedLength1 = seq1Length + 1
+						adjustedLength2 = seq2Length + 1
+						#print('adjustedLength1 =' ,adjustedLength1,' adjusted length2 = ',adjustedLength2)
+						#sequence 1 is the columns/spans the top of the table
+						#sequence 2 is the row / spans the side of the table
+						#make all cells have a value 0
+						#results = [[0 for x in range(seq1Length+1)] for y in range(seq2Length+1)]
+						#pointers = [[0 for x in range(seq1Length+1)] for y in range(seq2Length+1)]
 
 
-					#columns = [None]*(seq1Length+1)
-					#results = [columns]*(seq2Length+1)
+						#columns = [None]*(seq1Length+1)
+						#results = [columns]*(seq2Length+1)
 
-					#although I am using only one list, I treat is as a matrix.
-					#after having gone the length of seq, the next 'row' begins
-					results = (seq2Length+1) * (seq1Length+1) * [math.inf]
-					#print('results len = ', len(results))
-					cost = 0
-					#populate 1st row with multiples of five
-					print('populating 1st row')
-					for k in range(seq1Length+1):
-						results[k] = cost
-						cost+=5
+						#although I am using only one list, I treat is as a matrix.
+						#after having gone the length of seq, the next 'row' begins
+						results = (seq2Length+1) * (seq1Length+1) * [None]
+						#print('results len = ', len(results))
+						cost = 0
+						#populate 1st row with multiples of five
+						print('populating 1st row')
+						for k in range(seq1Length+1):
+							results[k] = cost
+							cost+=5
 
-					cost = 5
-					#populate 1st column with multiples of 5
-					#start at the beginning of the second row
-					print('populating 1st column')
-					index = seq1Length+1
-					for k in range(seq2Length):
-						#print('line 96 index = ', index)
-						results[index] = cost
-						cost+=5
-						#move to the next "row"
-						index+=(seq1Length+1)
-
-
-
-					#calculate the cost for the rest
-					for l in range(1,adjustedLength2):			#  'rows'
-						for m in range(1,adjustedLength1):		#  'columns'
-							index = (l*adjustedLength1)+m
-							#print('index = ', index)
-							left = (results[index-1])+5
-							up = (results[index - adjustedLength1])+5
-							diagonal = 200
-							#if the letters match
-							previousdiagIndex = index - adjustedLength1 - 1
-							if(sequence2[l-1] == sequence1[m-1]):
-								diagonal = results[previousdiagIndex] - 3
-							else:
-								diagonal = results[previousdiagIndex] + 1
-							# find the min
-							#diagonal preceeds up preceeds left
-							if diagonal < left and diagonal < up:
-								results[index] = diagonal
-							elif up < diagonal and up < left:
-								results[index] = up
-							else:
-								results[index] = left
+						cost = 5
+						#populate 1st column with multiples of 5
+						#start at the beginning of the second row
+						print('populating 1st column')
+						index = seq1Length+1
+						for k in range(seq2Length):
+							#print('line 96 index = ', index)
+							results[index] = cost
+							cost+=5
+							#move to the next "row"
+							index+=(seq1Length+1)
 
 
 
-					if i < 2 and j < 2:
-						self.printList(results,sequence1,sequence2,seq1Length,seq2Length)
+						#calculate the cost for the rest
+						for l in range(1,adjustedLength2):			#  'rows'
+							for m in range(1,adjustedLength1):		#  'columns'
+								index = (l*adjustedLength1)+m
+								#print('index = ', index)
+								left = (results[index-1])+5
+								up = (results[index - adjustedLength1])+5
+								diagonal = 200
+								#if the letters match
+								previousdiagIndex = index - adjustedLength1 - 1
+								if(sequence2[l-1] == sequence1[m-1]):
+									diagonal = results[previousdiagIndex] - 3
+								else:
+									diagonal = results[previousdiagIndex] + 1
+								# find the min
+								#diagonal preceeds up preceeds left
+								if diagonal < left and diagonal < up:
+									results[index] = diagonal
+								elif up < diagonal and up < left:
+									results[index] = up
+								else:
+									results[index] = left
+
+
+
+						if i < 2 and j < 2:
+							self.printList(results,sequence1,sequence2,seq1Length,seq2Length)
 
 				if(j < i):
 					s = {}

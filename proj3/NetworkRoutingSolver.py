@@ -122,11 +122,16 @@ class NetworkRoutingSolver:
             for i in shortestPaths:
                 if currentNode.node_id == i.id:
                     total_length += i.dist
+                    print(i.prev)
+
                     #grab the previousNode (i.e. the next node to jump to)
                     for node in self.network.nodes:
                         if node.node_id == i.prev:
                             previousNode = node
                     #get edge
+                    if previousNode == "":
+                        return {'cost':"uncreacheable", 'path':path_edges}
+
                     edgeToAdd = -1
                     for edge in previousNode.neighbors:
                         if edge.src == previousNode and edge.dest == currentNode:
@@ -154,7 +159,7 @@ class NetworkRoutingSolver:
         self.source = srcIndex
         t1 = time.time()
         listOfNodes = []        #lst to keep distances and previous
-        if use_heap == False:
+        if use_heap == True:
             #this stores all the distances and their previous nodes
             distanceArray = []
             #this is the priority queue
