@@ -6,12 +6,17 @@ def prime_test(N, k):
 	#for loop 1 takes a constant k iterations  so k time
 	##for loop 2 can take infinitely long depending on the luck of the draw
 	#	but probability says it will run at constant or near constant time
-	# mod_exp takes
-	# carmichael take
+	# mod_exp takes (log N)^3 because mod_exp itself takes n^3 where n is the number
+	#	of bits of the biggest input (in our case N).  The number of Bits of N is
+	# log N
+	# carmichael takes (logn)^2
 	#since carmichael is only run when the fermat fails, it will only run about
 	#	50% of the time.  But since 1/2 is a constant, we drop it in the long run
+	#  	however, if it does run, it calls the mod_exp method log N times. So that has
+	# 	to be taken into account.
 
-	# so in total, the run time of prime_test = k*c*
+	# so in total, the run time of prime_test = k*c*log(N)
+	# which equals (k × (logn)^3 × (logn)^2)
 	mylist = [0]
 	for x in range(k):
 		print(x)
@@ -33,9 +38,13 @@ def prime_test(N, k):
 
 def mod_exp(x, y, N):
 
-	#This method requires log y iterations
-	#it requires 2 mods per iterations
-	#it requires 1 multiplication
+	#This method requires  y/2 iterations
+	#it requires 2 mods per iterations of y bit numbers
+	#it requires 1 multiplications
+
+	#so it's run time is y^3.  
+
+
 
 	#this is just a copy of the algorithm in the book. No explanation needed
 	if y == 0: return 1
@@ -62,6 +71,8 @@ def is_carmichael(N,a):
 
 	#there are logN iterations of carmichael at worst case because N gets cut
 	#	 in half each time.
+	#	it calls the mod_exp which takes log^3(n) 
+	#	 so this algorithm takes log^2(n)
 
 
 

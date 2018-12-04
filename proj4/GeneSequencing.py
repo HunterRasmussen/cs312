@@ -19,6 +19,10 @@ MATCH = -3
 INDEL = 5
 SUB = 1
 
+DIAGONAL = 0
+LEFT = 1
+UP = -1
+
 
 # class Matrix:
 #
@@ -39,7 +43,7 @@ class GeneSequencing:
 	def printList(self,results,sequence1,sequence2,seq1Length,seq2Length):
 		adjustedLength1 = seq1Length+1
 		adjustedLength2 = seq2Length+1
-		print('adj len 1:',adjustedLength1,' ad len 2:' , adjustedLength2)
+		##print('adj len 1:',adjustedLength1,' ad len 2:' , adjustedLength2)
 		#print out the letters of the first sequence along the top
 		print(end='- - ')
 		for u in range(seq1Length):
@@ -66,6 +70,8 @@ class GeneSequencing:
 		self.MaxCharactersToAlign = align_length
 
 
+
+		toReturn = []
 
 		#for each pair of sequences
 		for i in range(len(sequences)):
@@ -107,7 +113,7 @@ class GeneSequencing:
 						cost = 5
 						#populate 1st column with multiples of 5
 						#start at the beginning of the second row
-						print('populating 1st column')
+						#print('populating 1st column')
 						index = seq1Length+1
 						for k in range(seq2Length):
 							#print('line 96 index = ', index)
@@ -136,18 +142,60 @@ class GeneSequencing:
 								#diagonal preceeds up preceeds left
 								if diagonal < left and diagonal < up:
 									results[index] = diagonal
+									pointers[index] = DIAGONAL
 								elif up < diagonal and up < left:
 									results[index] = up
+									pointers[index] = UP
 								else:
 									results[index] = left
+									pointers[index] = LEFT
 
 
 
 						if i < 2 and j < 2:
 							self.printList(results,sequence1,sequence2,seq1Length,seq2Length)
 
-				if(j < i):
-					s = {}
+					score = results[((seq2Length+1) * (seq1Length+1))-1]
+					table.item(i,j).setText('{}'.format(int(score)))
+					table.repaint()
+					index = ((seq2Length+1) * (seq1Length+1))-1
+					#backtrace
+					aligment1 = []
+					aligment2 = []
+					seq1Index = seq1Length - 1
+					seq2Index = seq2Length -1
+					while(index!=0):
+						temp = pointers[index]
+						if(seq1Index < 0):
+								seq1Index = 0
+						if (temp == DIAGONAL):
+							aligment1.append(sequence1[seq1Index])
+							seq1Index = seq1Index - 1
+							aligment2.append(sequence2[seq2Index])
+							seq2Index -=1
+							index -= (adjustedLength1 +1)
+
+						elif(temp == UP):
+							aligment2.append(sequence2[seq2Index])
+							aligment1.append('-')
+							seq2Index -=1
+							index -= adjustedLength1
+						else:
+							aligment1.append(sequence1[seq1Index])
+							aligment2.append('-')
+							seq1Index = seq1Index - 1
+							index -= 1
+					string1 = ''.join(reversed(aligment1))
+					string2 = ''.join(reversed(aligment2))
+					if(j == 9 and i == 2):
+						print(string1)
+						print(string2)
+					s = {'align_cost':score, 'seqi_first100':string1, 'seqj_first100':string2}
+					jresults.append(s)
+					print('length of jresults = ', len(jresults))
+				toReturn.append(jresults)
+		return toReturn
+
 				#else:
 ###################################################################################################
 # your code should replace these three statements and populate the three variables: score, alignment1 and alignment2
@@ -203,7 +251,6 @@ class GeneSequencing:
 
 
 
-		#---------------		Print out the first 4 arrays ---------------------#
 
 
 # previousRow = adjustedLength1 * [None]			# save the previous row for quicker lookup
