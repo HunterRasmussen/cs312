@@ -18,6 +18,13 @@ import heapq
 import itertools
 
 
+class searchState:
+	potentialBest = math.inf
+	distanceMatrix = []
+	rowIndex = math.inf
+
+
+
 
 class TSPSolver:
 	def __init__( self, gui_view ):
@@ -97,7 +104,17 @@ class TSPSolver:
 		
 	def branchAndBound( self, time_allowance=60.0 ):
 		pass
+		#previousState = generateFirstState
+		'''while time > 0:
+			while prioritqueue is not empty:
+				currentstate = pop from priority queue
+				for int i in range of cities:
+					rowIndex = currentState.rowIndex * number of cities
+					if currentState.distanceMatrix[rowIndex+i] != math.inf:
+						
 
+			
+		'''
 
 
 	''' <summary>
